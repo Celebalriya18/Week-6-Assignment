@@ -1,0 +1,130 @@
+Linked Services:
+
+{
+    "name": "LS_Source_SQL",
+    "properties": {
+        "type": "SqlServer",
+        "typeProperties": {
+            "connectionString": "your_source_connection_string"
+        }
+    }
+},
+{
+    "name": "LS_Destination_AzureSQL",
+    "properties": {
+        "type": "AzureSqlDatabase",
+        "typeProperties": {
+            "connectionString": "your_destination_connection_string"
+        }
+    }
+}
+
+Datasets:
+{
+    "name": "DS_Source_SQL",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Source_SQL",
+            "type": "LinkedServiceReference"
+        },
+        "type": "SqlServerTable",
+        "typeProperties": {
+            "tableName": "your_source_table"
+        }
+    }
+},
+{
+    "name": "DS_Destination_AzureSQL",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Destination_AzureSQL",
+            "type": "LinkedServiceReference"
+        },
+        "type": "AzureSqlTable",
+        "typeProperties": {
+            "tableName": "your_destination_table"
+        }
+    }
+}
+
+Pipeline
+{
+    "name": "IncrementalLoadPipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "GetWatermark",
+                "type": "Lookup",
+                "typeProperties": {
+                    "source": {
+                        "type": "AzureSqlSource",
+                        "sqlReaderQuery": "SELECT MAX(LastModifiedDate) AS LastModifiedDate FROM your_destination_table"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_Destination_AzureSQL",
+                        "type": "DatasetReference"
+                    }
+                },
+                "outputs": [
+                    {
+                        "name": "WatermarkOutput"
+                    }
+                ]
+            },
+            {
+                "name": "IncrementalCopy",
+                "type": "Copy",
+                "dependsOn": [
+                    {
+                        "activity": "GetWatermark",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "inputs": [
+                    {
+                        "referenceName": "DS_Source_SQL",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "DS_Destination_AzureSQL",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlSource",
+                        "sqlReaderQuery": {
+                            "value": "SELECT * FROM your_source_table WHERE LastModifiedDate > '@{activity('GetWatermark').output.firstRow.LastModifiedDate}'",
+                            "type": "Expression"
+                        }
+                    },
+                    "sink": {
+                        "type": "SqlSink"
+                    }
+                }
+            }
+        ]
+    }
+}
+Trigger:
+{
+    "name": "DailyTrigger",
+    "properties": {
+        "recurrence": {
+            "frequency": "Day",
+            "interval": 1
+        },
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "IncrementalLoadPipeline",
+                    "type": "PipelineReference"
+                }
+            }
+        ]
+    }
+}
