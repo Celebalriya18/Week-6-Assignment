@@ -1,0 +1,91 @@
+Step 1: Create Linked Services
+Create linked services for the FTP/SFTP server and the destination.
+{
+    "name": "LS_FTP",
+    "properties": {
+        "type": "FtpServer",
+        "typeProperties": {
+            "host": "ftp.yourserver.com",
+            "port": 21,
+            "enableSsl": true,
+            "authenticationType": "Basic",
+            "userName": "your_username",
+            "password": {
+                "type": "SecureString",
+                "value": "your_password"
+            }
+        }
+    }
+}
+
+Linked Service for SFTP Server
+{
+    "name": "LS_SFTP",
+    "properties": {
+        "type": "Sftp",
+        "typeProperties": {
+            "host": "sftp.yourserver.com",
+            "port": 22,
+            "authenticationType": "Basic",
+            "userName": "your_username",
+            "password": {
+                "type": "SecureString",
+                "value": "your_password"
+            }
+        }
+    }
+}
+
+Linked Service for Azure Blob Storage
+{
+    "name": "LS_AzureBlobStorage",
+    "properties": {
+        "type": "AzureBlobStorage",
+        "typeProperties": {
+            "connectionString": "your_blob_storage_connection_string"
+        }
+    }
+}
+Step 2: Create Datasets
+Create datasets for both the source (FTP/SFTP server) and the destination (Azure Blob Storage).
+
+Dataset for FTP Server
+{
+    "name": "DS_FTP",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_FTP",
+            "type": "LinkedServiceReference"
+        },
+        "type": "File",
+        "typeProperties": {
+            "location": {
+                "type": "FtpServerLocation",
+                "fileName": "your_file_name.csv",
+                "folderPath": "/path/to/your/file/"
+            },
+            "format": {
+                "type": "TextFormat",
+                "columnDelimiter": ","
+            }
+        }
+    }
+}
+Dataset for SFTP Server
+{
+    "name": "DS_SFTP",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_SFTP",
+            "type": "LinkedServiceReference"
+        },
+        "type": "File",
+        "typeProperties": {
+            "location": {
+                "type": "SftpLocation",
+                "fileName": "your_file_name.csv",
+                "folderPath": "/path/to/your/file/"
+            },
+            "format": {
+                "type": "TextFormat",
+                "columnDelimiter": ","
