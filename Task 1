@@ -1,0 +1,94 @@
+Step 1: Create Linked Services
+// Linked service for on-premises SQL Server
+{
+    "name": "LS_OnPrem_SQL",
+    "properties": {
+        "type": "SqlServer",
+        "typeProperties": {
+            "connectionString": "your_connection_string"
+        },
+        "connectVia": {
+            "referenceName": "SelfHostedIR",
+            "type": "IntegrationRuntimeReference"
+        }
+    }
+}
+
+// Linked service for Azure SQL Database
+{
+    "name": "LS_Azure_SQLDB",
+    "properties": {
+        "type": "AzureSqlDatabase",
+        "typeProperties": {
+            "connectionString": "your_azure_sql_db_connection_string"
+        }
+    }
+}
+
+Step 2: Create Datasets
+Create datasets for both the source and the destination.
+// Dataset for on-premises SQL Server
+{
+    "name": "DS_OnPrem_SQL",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_OnPrem_SQL",
+            "type": "LinkedServiceReference"
+        },
+        "type": "SqlServerTable",
+        "typeProperties": {
+            "tableName": "your_table_name"
+        }
+    }
+}
+
+// Dataset for Azure SQL Database
+{
+    "name": "DS_Azure_SQLDB",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Azure_SQLDB",
+            "type": "LinkedServiceReference"
+        },
+        "type": "AzureSqlTable",
+        "typeProperties": {
+            "tableName": "your_destination_table_name"
+        }
+    }
+}
+Step 3: Create a Pipeline
+Create a pipeline that uses a Copy Activity to transfer data from the on-premises SQL Server to the Azure SQL Database.
+{
+    "name": "CopyPipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "CopyFromOnPremToAzure",
+                "type": "Copy",
+                "inputs": [
+                    {
+                        "referenceName": "DS_OnPrem_SQL",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "referenceName": "DS_Azure_SQLDB",
+                        "type": "DatasetReference"
+                    }
+                ],
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlSource"
+                    },
+                    "sink": {
+                        "type": "SqlSink"
+                    }
+                }
+            }
+        ]
+    }
+}
+Step 4: Deploy and Run the Pipeline
+Deploy the pipeline in Azure Data Factory and run it to transfer data from your local server to the Azure SQL Database.
+
