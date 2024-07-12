@@ -1,0 +1,96 @@
+Step 1: Create the Pipeline
+{
+    "name": "CheckLastSaturdayPipeline",
+    "properties": {
+        "activities": [
+            {
+                "name": "LookupCurrentDate",
+                "type": "Lookup",
+                "typeProperties": {
+                    "source": {
+                        "type": "SqlSource",
+                        "sqlReaderQuery": "SELECT GETDATE() AS CurrentDate, EOMONTH(GETDATE()) AS EndOfMonth"
+                    },
+                    "dataset": {
+                        "referenceName": "DS_SqlLookup",
+                        "type": "DatasetReference"
+                    }
+                },
+                "outputs": [
+                    {
+                        "name": "LookupOutput"
+                    }
+                ]
+            },
+            {
+                "name": "IfLastSaturday",
+                "type": "IfCondition",
+                "dependsOn": [
+                    {
+                        "activity": "LookupCurrentDate",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "expression": {
+                    "value": "@equals(dayOfWeek(activity('LookupCurrentDate').output.firstRow.EndOfMonth), 'Saturday')",
+                    "type": "Expression"
+                },
+                "ifTrueActivities": [
+                    {
+                        "name": "ExecuteMainPipeline",
+                        "type": "ExecutePipeline",
+                        "typeProperties": {
+                            "pipeline": {
+                                "referenceName": "MainPipeline",
+                                "type": "PipelineReference"
+                            }
+                        }
+                    }
+                ]
+            }
+        ]
+    }
+}
+
+Step 2: Create the Trigger
+
+{
+    "name": "EverySaturdayTrigger",
+    "properties": {
+        "recurrence": {
+            "frequency": "Week",
+            "interval": 1,
+            "schedule": {
+                "hours": [0],
+                "minutes": [0],
+                "weekDays": ["Saturday"]
+            }
+        },
+        "pipelines": [
+            {
+                "pipelineReference": {
+                    "referenceName": "CheckLastSaturdayPipeline",
+                    "type": "PipelineReference"
+                }
+            }
+        ]
+    }
+}
+
+Step 3: Create the Lookup Dataset
+
+{
+    "name": "DS_SqlLookup",
+    "properties": {
+        "linkedServiceName": {
+            "referenceName": "LS_Source_SQL",
+            "type": "LinkedServiceReference"
+        },
+        "type": "SqlServerTable",
+        "typeProperties": {
+            "tableName": "YourLookupTable"  // This can be any table since we're only executing a query
+        }
+    }
+}
